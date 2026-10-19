@@ -32,6 +32,8 @@ local config = require 'config'
 
 local bikewheel = {}
 
+bikewheel.itemsRequired = config.requireItems ~= false and config.inventory ~= 'none'
+
 bikewheel.wheels = {
     front = { bone = 'wheel_lf', wheelIndex = 1, tyreIndex = 0, item = config.items.frontWheel, thickSide = -1 },
     rear = { bone = 'wheel_lr', wheelIndex = 0, tyreIndex = 4, item = config.items.rearWheel, thickSide = -1 },

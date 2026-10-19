@@ -42,6 +42,8 @@ local MESSAGES = {
     alignment = 'The adjuster marks do not match.',
     under_torque = 'Under torque. Back it off and do it again.',
     over_torque = 'Over torque. Back it off and do it again.',
+    no_bike = 'No parked motorcycle nearby.',
+    no_permission = 'You are not allowed to do that.',
 }
 
 ---@param reason? string
@@ -230,14 +232,14 @@ local function option(wheelKey)
         icon = 'fas fa-screwdriver-wrench',
         bones = wheel.bone,
         distance = config.interactDistance,
-        items = { config.items.toolkit, wheel.item },
+        items = shared.itemsRequired and { config.items.toolkit, wheel.item } or nil,
         canInteract = function(entity) return serviceable(entity) end,
         onSelect = function(data)
             local entity = type(data) == 'table' and data.entity or data
 
             if not entity or entity == 0 or not NetworkGetEntityIsNetworked(entity) then return end
 
-            TriggerServerEvent('bl_handson:server:bikewheel', NetworkGetNetworkIdFromEntity(entity), wheelKey)
+            TriggerServerEvent('bl_handson:server:bikewheel', NetworkGetNetworkIdFromEntity(entity), wheelKey, 'target')
         end,
     }
 end
@@ -247,6 +249,30 @@ local function registerOptions()
 end
 
 registerOptions()
+
+---@param wheelKey 'front' | 'rear'
+local function commandRequest(wheelKey)
+    if active then return notify('error', 'busy') end
+    if cache.vehicle then return notify('error', 'in_vehicle') end
+
+    local vehicle = lib.getClosestVehicle(GetEntityCoords(cache.ped), config.command.distance, false)
+
+    if not vehicle or not serviceable(vehicle) or not NetworkGetEntityIsNetworked(vehicle) then
+        return notify('error', 'no_bike')
+    end
+
+    TriggerServerEvent('bl_handson:server:bikewheel', NetworkGetNetworkIdFromEntity(vehicle), wheelKey, 'command')
+end
+
+if config.command.enabled or not bridge.hasTarget() then
+    RegisterCommand(config.command.name, function(_, args)
+        commandRequest(args[1] == 'front' and 'front' or 'rear')
+    end, false)
+
+    TriggerEvent('chat:addSuggestion', ('/%s'):format(config.command.name), 'Change a motorcycle wheel', {
+        { name = 'wheel', help = 'front | rear (default rear)' },
+    })
+end
 
 AddEventHandler('onResourceStart', function(resource)
     if not lib.table.contains(bridge.targets, resource) then return end

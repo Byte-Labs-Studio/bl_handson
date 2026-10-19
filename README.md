@@ -14,19 +14,19 @@ Walk up to a parked motorcycle with a tool kit and a replacement wheel, target t
 - The old wheel actually comes off the bike and the new one goes back on
 - Items are only taken on start and refunded (or dropped) if the job fails
 - Camera views per step and a clean NUI overlay with step progress and strike counter
-- Auto-detects inventory and target resources
+- Auto-detects inventory and target resources, or runs fully standalone with a command
 - Developer exports and a completion event to hook in tyre condition, XP, payouts and more
 
 ## Dependencies
 - [ox_lib](https://github.com/overextended/ox_lib)
 - OneSync
-- An inventory: [ox_inventory](https://github.com/overextended/ox_inventory), qb-core (qb / ps / lj inventory), qs-inventory or es_extended
-- A target: [ox_target](https://github.com/overextended/ox_target) or [qb-target](https://github.com/qbcore-framework/qb-target)
+- Optional inventory: [ox_inventory](https://github.com/overextended/ox_inventory), qb-core (qb / ps / lj inventory), qs-inventory or es_extended
+- Optional target: [ox_target](https://github.com/overextended/ox_target) or [qb-target](https://github.com/qbcore-framework/qb-target)
 
 ## Installation
 1. Download
 2. Extract the `bl_handson` folder to your resources directory
-3. Add the items from [`install/`](install) to your inventory (see [Items](#items))
+3. Add the items from [`install/`](install) to your inventory (see [Items](#items)), or skip this for [Standalone](#standalone)
 4. Add `ensure bl_handson` to your server.cfg after ox_lib, your inventory and your target
 5. Configure the `config.lua` to your liking
 
@@ -39,13 +39,66 @@ return {
         rearWheel = 'moto_wheel_rear',
     },
 
-    inventory = 'auto', -- 'auto' | 'ox_inventory' | 'qs-inventory' | 'qb-core' | 'es_extended'
-    target = 'auto',    -- 'auto' | 'ox_target' | 'qb-target'
+    inventory = 'auto', -- 'auto' | 'none' | 'ox_inventory' | 'qs-inventory' | 'qb-core' | 'es_extended'
+    requireItems = true, -- forced off when inventory = 'none'
+
+    target = 'auto', -- 'auto' | 'none' | 'ox_target' | 'qb-target'
+
+    command = {
+        enabled = false, -- always on when no target is running
+        name = 'changewheel',
+        distance = 3.0,
+        ace = false, -- false or an ace like 'bl_handson.use'
+    },
 
     interactDistance = 1.8,
     maxStrikes = 3,
 }
 ```
+
+## Standalone
+No framework, inventory or target needed, only ox_lib and OneSync. Players use a command instead of a target and no items are checked or taken. The job still runs fully server-validated, the tyre is still fixed and `bl_handson:bikewheel:completed` still fires.
+
+```lua
+return {
+    items = {
+        toolkit = 'moto_toolkit',
+        frontWheel = 'moto_wheel_front',
+        rearWheel = 'moto_wheel_rear',
+    },
+
+    inventory = 'none',
+    requireItems = false,
+
+    target = 'none',
+
+    command = {
+        enabled = true,
+        name = 'changewheel',
+        distance = 3.0,
+        ace = 'bl_handson.use',
+    },
+
+    interactDistance = 1.8,
+    maxStrikes = 3,
+}
+```
+
+Stand next to a parked motorcycle with nobody on it and run:
+```
+/changewheel        -- rear wheel
+/changewheel rear
+/changewheel front
+```
+
+If `command.ace` is set, the server checks it on every command request. Grant it in your server.cfg:
+```
+add_ace group.mechanic bl_handson.use allow
+add_principal identifier.license:xxxxxxxx group.mechanic
+```
+Set `ace = false` to let everyone use the command.
+
+The command is also registered when `target = 'auto'` and no target resource is running, or when `command.enabled = true` next to a target.
 
 ## Items
 The tool kit is kept, the replacement wheel is used up when the job is done.

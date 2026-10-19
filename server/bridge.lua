@@ -6,6 +6,7 @@ local INVENTORIES = { 'ox_inventory', 'qs-inventory', 'qb-core', 'es_extended' }
 
 ---@return string?
 local function inventory()
+    if config.inventory == 'none' then return end
     if config.inventory ~= 'auto' then return config.inventory end
 
     for i = 1, #INVENTORIES do

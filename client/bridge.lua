@@ -17,6 +17,13 @@ local function target()
 
 end
 
+---@return boolean
+function bridge.hasTarget()
+    local resource = target()
+
+    return resource ~= nil and resource ~= 'none' and GetResourceState(resource) == 'started'
+end
+
 ---@param option table
 ---@return table
 local function qbOption(option)
