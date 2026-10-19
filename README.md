@@ -1,0 +1,101 @@
+# Byte Labs - Hands-On
+A hands-on, server-validated motorcycle wheel change simulator for your FiveM server.
+
+Website: [Byte Labs](https://byte-labs.net)
+Discord: [Byte Labs](https://discord.gg/fqsqSjZfxE)
+
+Walk up to a parked motorcycle with a tool kit and a replacement wheel, target the front or rear wheel and do the job yourself: lift the bike on a paddock stand, crack the caliper bolts, break the axle nut loose, set the chain slack, torque it to spec and pump the brake. **22 steps for a rear wheel, 17 for the front.**
+
+## Features
+- Fully hands-on: every step is done with the mouse (drag, turn, adjust, pick, pump), no progress bars
+- Server-validated: every step is checked in order, with minimum step times, and rushing or doing it wrong costs a strike
+- Real tools and parts: paddock stands, ratchet, breaker bar, torque wrench, axle, spacers, chain adjusters and caliper (15 original streamed props)
+- Real mechanics: breaker-bar breakaway, chain slack and adjuster alignment, torque spec with over/under torque, wrong-spacer checks
+- The old wheel actually comes off the bike and the new one goes back on
+- Items are only taken on start and refunded (or dropped) if the job fails
+- Camera views per step and a clean NUI overlay with step progress and strike counter
+- Auto-detects inventory and target resources
+- Developer exports and a completion event to hook in tyre condition, XP, payouts and more
+
+## Dependencies
+- [ox_lib](https://github.com/overextended/ox_lib)
+- OneSync
+- An inventory: [ox_inventory](https://github.com/overextended/ox_inventory), qb-core (qb / ps / lj inventory), qs-inventory or es_extended
+- A target: [ox_target](https://github.com/overextended/ox_target) or [qb-target](https://github.com/qbcore-framework/qb-target)
+
+## Installation
+1. Download
+2. Extract the `bl_handson` folder to your resources directory
+3. Add the items from [`install/`](install) to your inventory (see [Items](#items))
+4. Add `ensure bl_handson` to your server.cfg after ox_lib, your inventory and your target
+5. Configure the `config.lua` to your liking
+
+## Config
+```lua
+return {
+    items = {
+        toolkit = 'moto_toolkit',
+        frontWheel = 'moto_wheel_front',
+        rearWheel = 'moto_wheel_rear',
+    },
+
+    inventory = 'auto', -- 'auto' | 'ox_inventory' | 'qs-inventory' | 'qb-core' | 'es_extended'
+    target = 'auto',    -- 'auto' | 'ox_target' | 'qb-target'
+
+    interactDistance = 1.8,
+    maxStrikes = 3,
+}
+```
+
+## Items
+The tool kit is kept, the replacement wheel is used up when the job is done.
+
+| Item | Default name |
+| --- | --- |
+| Tool kit | `moto_toolkit` |
+| Front wheel | `moto_wheel_front` |
+| Rear wheel | `moto_wheel_rear` |
+
+- **OX Inventory**: paste [`install/ox_inventory.lua`](install/ox_inventory.lua) into `ox_inventory/data/items.lua`
+- **QB / PS / LJ Inventory**: paste [`install/qb-core.lua`](install/qb-core.lua) into `qb-core/shared/items.lua`
+- **ESX**: run [`install/es_extended.sql`](install/es_extended.sql)
+
+Item images are not included, see [`install/images`](install/images/README.md).
+
+## Controls
+| Key | Action |
+| --- | --- |
+| `LMB` | Grab / drag / turn |
+| `E` | Confirm |
+| `X` | Stop the job |
+
+## Developers
+### Exports (server)
+```lua
+-- Starts a game for a player and yields until it ends.
+-- Items are not checked or taken here, do that yourself.
+local ok, reason = exports.bl_handson:start(source, 'bikewheel', { netId = netId, wheel = 'rear' })
+
+-- true while the player is in a game
+local busy = exports.bl_handson:isBusy(source)
+```
+
+### Events (server)
+Fired after a wheel change from the built-in target option has been completed.
+```lua
+AddEventHandler('bl_handson:bikewheel:completed', function(source, netId, wheel)
+    -- wheel: 'front' | 'rear'
+    local vehicle = NetworkGetEntityFromNetworkId(netId)
+end)
+```
+Use `AddEventHandler`, not `RegisterNetEvent`, so clients cannot fake it.
+
+## Known limitations
+- Motorcycles only (vehicle class 8), parked, with nobody on them.
+- On bikes the CFX wheel array is front = `1`, rear = `0` (tyre indexes front = `0`, rear = `4`).
+- The real wheel is removed with `BreakOffVehicleWheel(vehicle, index, false, true, true, false)` (`deleteWheel = true`) and restored when the job ends.
+- qb-target only checks for the tool kit before showing the option; the wheel item is still checked by the server.
+- The `ecrp_hs_*` model names are baked into the streamed assets and stay as they are.
+
+## License
+[GPL-3.0](LICENSE)
