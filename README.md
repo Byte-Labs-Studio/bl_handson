@@ -14,7 +14,7 @@ Walk up to a parked motorcycle with a tool kit and a replacement wheel, target t
 - The old wheel actually comes off the bike and the new one goes back on
 - Items are only taken on start and refunded (or dropped) if the job fails
 - Camera views per step and a clean NUI overlay with step progress and strike counter
-- Auto-detects inventory and target resources, or runs fully standalone with a command
+- Auto-detects inventory and target resources, or runs fully standalone with an ox_lib prompt
 - Developer exports and a completion event to hook in tyre condition, XP, payouts and more
 
 ## Dependencies
@@ -44,12 +44,12 @@ return {
 
     target = 'auto', -- 'auto' | 'none' | 'ox_target' | 'qb-target'
 
-    command = {
-        enabled = false, -- always on when no target is running
-        name = 'changewheel',
-        distance = 3.0,
-        ace = false, -- false or an ace like 'bl_handson.use'
+    prompt = {           -- used when no target resource is running
+        key = 'E',
+        distance = 1.8,
     },
+
+    command = false,     -- or { name = 'changewheel', restricted = 'group.mechanic' }
 
     interactDistance = 1.8,
     maxStrikes = 3,
@@ -57,7 +57,7 @@ return {
 ```
 
 ## Standalone
-No framework, inventory or target needed, only ox_lib and OneSync. Players use a command instead of a target and no items are checked or taken. The job still runs fully server-validated, the tyre is still fixed and `bl_handson:bikewheel:completed` still fires.
+No framework, inventory or target needed, only ox_lib and OneSync. No items are checked or taken. The job still runs fully server-validated, the tyre is still fixed and `bl_handson:bikewheel:completed` still fires.
 
 ```lua
 return {
@@ -72,33 +72,38 @@ return {
 
     target = 'none',
 
-    command = {
-        enabled = true,
-        name = 'changewheel',
-        distance = 3.0,
-        ace = 'bl_handson.use',
+    prompt = {
+        key = 'E',
+        distance = 1.8,
     },
+
+    command = false,
 
     interactDistance = 1.8,
     maxStrikes = 3,
 }
 ```
 
-Stand next to a parked motorcycle with nobody on it and run:
+Walk up to a parked motorcycle with nobody on it. When you are close to the front or rear wheel an ox_lib text UI shows `[E] Change front wheel` or `[E] Change rear wheel`. Press the key to start. Players can rebind it under Settings > Key Bindings > FiveM.
+
+The prompt is used whenever `target = 'none'`, or `target = 'auto'` and no target resource is running.
+
+### Optional command
+```lua
+command = {
+    name = 'changewheel',
+    restricted = 'group.mechanic', -- false for everyone
+},
+```
+Registered with `lib.addCommand` on the server. The server picks the closest motorcycle within 3 m.
 ```
 /changewheel        -- rear wheel
-/changewheel rear
 /changewheel front
 ```
-
-If `command.ace` is set, the server checks it on every command request. Grant it in your server.cfg:
+With `restricted` set, grant access in your server.cfg:
 ```
-add_ace group.mechanic bl_handson.use allow
 add_principal identifier.license:xxxxxxxx group.mechanic
 ```
-Set `ace = false` to let everyone use the command.
-
-The command is also registered when `target = 'auto'` and no target resource is running, or when `command.enabled = true` next to a target.
 
 ## Items
 The tool kit is kept, the replacement wheel is used up when the job is done.

@@ -13,13 +13,13 @@ return {
     ---@type 'auto' | 'none' | 'ox_target' | 'qb-target'
     target = 'auto',
 
-    command = {
-        enabled = false,
-        name = 'changewheel',
-        distance = 3.0,
-        ---@type false | string
-        ace = false,
+    prompt = {
+        key = 'E',
+        distance = 1.8,
     },
+
+    ---@type false | { name: string, restricted: false | string | string[] }
+    command = false,
 
     interactDistance = 1.8,
     maxStrikes = 3,

@@ -18,6 +18,9 @@ local MOTORCYCLE_CLASS = 8
 local FADE_MS = 350
 local FADE_TIMEOUT_MS = 2000
 local MAX_PARKED_SPEED = 0.5
+local PROMPT_SCAN_MS = 500
+local PROMPT_TICK_MS = 100
+local PROMPT_SCAN_PADDING = 2.0
 
 local MESSAGES = {
     done = 'New wheel fitted and torqued.',
@@ -43,7 +46,6 @@ local MESSAGES = {
     under_torque = 'Under torque. Back it off and do it again.',
     over_torque = 'Over torque. Back it off and do it again.',
     no_bike = 'No parked motorcycle nearby.',
-    no_permission = 'You are not allowed to do that.',
 }
 
 ---@param reason? string
@@ -222,13 +224,22 @@ local function serviceable(entity)
 end
 
 ---@param wheelKey 'front' | 'rear'
+---@return string
+local function label(wheelKey)
+    return wheelKey == 'rear' and 'Change rear wheel' or 'Change front wheel'
+end
+
+---@type CKeybind
+local keybind
+
+---@param wheelKey 'front' | 'rear'
 ---@return table
 local function option(wheelKey)
     local wheel = shared.wheels[wheelKey]
 
     return {
         name = ('bl_handson:wheel_%s'):format(wheelKey),
-        label = wheelKey == 'rear' and 'Change rear wheel' or 'Change front wheel',
+        label = label(wheelKey),
         icon = 'fas fa-screwdriver-wrench',
         bones = wheel.bone,
         distance = config.interactDistance,
@@ -250,29 +261,100 @@ end
 
 registerOptions()
 
----@param wheelKey 'front' | 'rear'
-local function commandRequest(wheelKey)
-    if active then return notify('error', 'busy') end
-    if cache.vehicle then return notify('error', 'in_vehicle') end
+---@type { wheel: 'front' | 'rear', vehicle: integer }?
+local prompt
 
-    local vehicle = lib.getClosestVehicle(GetEntityCoords(cache.ped), config.command.distance, false)
+---@param wheelKey? 'front' | 'rear'
+---@param vehicle? integer
+local function setPrompt(wheelKey, vehicle)
+    if not wheelKey then
+        if prompt then lib.hideTextUI() end
 
-    if not vehicle or not serviceable(vehicle) or not NetworkGetEntityIsNetworked(vehicle) then
-        return notify('error', 'no_bike')
+        prompt = nil
+
+        return
     end
 
-    TriggerServerEvent('bl_handson:server:bikewheel', NetworkGetNetworkIdFromEntity(vehicle), wheelKey, 'command')
+    local changed = not prompt or prompt.wheel ~= wheelKey
+
+    prompt = { wheel = wheelKey, vehicle = vehicle --[[@as integer]] }
+
+    if changed then
+        lib.showTextUI(('[%s] %s'):format(keybind.currentKey, label(wheelKey)))
+    end
+
 end
 
-if config.command.enabled or not bridge.hasTarget() then
-    RegisterCommand(config.command.name, function(_, args)
-        commandRequest(args[1] == 'front' and 'front' or 'rear')
-    end, false)
+---@param vehicle integer
+---@return 'front' | 'rear' | nil
+local function nearestWheel(vehicle)
+    local coords = GetEntityCoords(cache.ped)
+    local best, bestDistance = nil, config.prompt.distance
 
-    TriggerEvent('chat:addSuggestion', ('/%s'):format(config.command.name), 'Change a motorcycle wheel', {
-        { name = 'wheel', help = 'front | rear (default rear)' },
-    })
+    for wheelKey, wheel in pairs(shared.wheels) do
+        local bone = GetEntityBoneIndexByName(vehicle, wheel.bone)
+
+        if bone ~= -1 then
+            local distance = #(coords - GetWorldPositionOfEntityBone(vehicle, bone))
+
+            if distance <= bestDistance then
+                best, bestDistance = wheelKey, distance
+            end
+
+        end
+
+    end
+
+    return best
 end
+
+---@return boolean
+local function promptAllowed()
+    return not active and not cache.vehicle and not IsPedDeadOrDying(cache.ped, true) and not bridge.hasTarget()
+end
+
+keybind = lib.addKeybind({
+    name = 'bl_handson_prompt',
+    description = 'Change motorcycle wheel',
+    defaultKey = config.prompt.key,
+    onPressed = function()
+        if not prompt or not promptAllowed() then return end
+
+        local vehicle, wheelKey = prompt.vehicle, prompt.wheel
+
+        if not DoesEntityExist(vehicle) or not serviceable(vehicle) or not NetworkGetEntityIsNetworked(vehicle) then return end
+
+        setPrompt()
+        TriggerServerEvent('bl_handson:server:bikewheel', NetworkGetNetworkIdFromEntity(vehicle), wheelKey, 'prompt')
+    end,
+})
+
+---@param vehicle integer | false | nil
+---@param radius number
+---@return boolean
+local function inRange(vehicle, radius)
+    if not vehicle or not DoesEntityExist(vehicle) then return false end
+    if not promptAllowed() or not serviceable(vehicle) then return false end
+
+    return #(GetEntityCoords(cache.ped) - GetEntityCoords(vehicle)) <= radius
+end
+
+CreateThread(function()
+    local scanRadius = config.prompt.distance + PROMPT_SCAN_PADDING
+
+    while true do
+        local vehicle = promptAllowed() and lib.getClosestVehicle(GetEntityCoords(cache.ped), scanRadius, false)
+
+        while inRange(vehicle, scanRadius) do
+            setPrompt(nearestWheel(vehicle --[[@as integer]]), vehicle --[[@as integer]])
+            Wait(PROMPT_TICK_MS)
+        end
+
+        setPrompt()
+        Wait(PROMPT_SCAN_MS)
+    end
+
+end)
 
 AddEventHandler('onResourceStart', function(resource)
     if not lib.table.contains(bridge.targets, resource) then return end
@@ -302,5 +384,7 @@ AddEventHandler('onResourceStop', function(resource)
     end
 
     bridge.removeVehicleOptions()
+
+    if prompt then lib.hideTextUI() end
 
 end)
