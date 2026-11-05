@@ -1,19 +1,8 @@
-local config = require 'config'
+local shared = require 'shared.bikewheel'
 
 local bridge = {}
 
-local INVENTORIES = { 'ox_inventory', 'qs-inventory', 'qb-core', 'es_extended' }
-
----@return string?
-local function inventory()
-    if config.inventory == 'none' then return end
-    if config.inventory ~= 'auto' then return config.inventory end
-
-    for i = 1, #INVENTORIES do
-        if GetResourceState(INVENTORIES[i]) == 'started' then return INVENTORIES[i] end
-    end
-
-end
+local inventory = shared.inventory
 
 ---@param source integer
 ---@return table?

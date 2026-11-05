@@ -78,14 +78,16 @@ return function(start)
         local wheel = shared.wheels[wheelKey]
         if not wheel then return end
 
-        if shared.itemsRequired then
+        local charge = shared.itemsRequired()
+
+        if charge then
             if bridge.count(src, config.items.toolkit) < 1 then return notify(src, 'error', 'no_toolkit') end
             if bridge.count(src, wheel.item) < 1 then return notify(src, 'error', 'no_wheel') end
         end
 
         pending[src] = true
 
-        local ok, reason = start(src, 'bikewheel', { netId = netId, wheel = wheelKey, charge = shared.itemsRequired })
+        local ok, reason = start(src, 'bikewheel', { netId = netId, wheel = wheelKey, charge = charge })
 
         pending[src] = nil
 

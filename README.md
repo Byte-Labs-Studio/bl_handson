@@ -41,7 +41,7 @@ return {
     },
 
     inventory = 'auto', -- 'auto' | 'none' | 'ox_inventory' | 'qs-inventory' | 'qb-core' | 'es_extended'
-    requireItems = true, -- forced off when inventory = 'none'
+    requireItems = true, -- forced off when inventory = 'none' or 'auto' finds no supported inventory
 
     target = 'auto', -- 'auto' | 'none' | 'ox_target' | 'qb-target'
 

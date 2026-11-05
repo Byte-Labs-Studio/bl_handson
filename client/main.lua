@@ -269,7 +269,7 @@ local function option(wheelKey)
         icon = 'fas fa-screwdriver-wrench',
         bones = wheel.bone,
         distance = config.interactDistance,
-        items = shared.itemsRequired and { config.items.toolkit, wheel.item } or nil,
+        items = shared.itemsRequired() and { config.items.toolkit, wheel.item } or nil,
         canInteract = function(entity) return serviceable(entity) end,
         onSelect = function(data)
             local entity = data.entity

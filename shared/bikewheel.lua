@@ -32,7 +32,25 @@ local config = require 'config'
 
 local bikewheel = {}
 
-bikewheel.itemsRequired = config.requireItems ~= false and config.inventory ~= 'none'
+bikewheel.inventories = { 'ox_inventory', 'qs-inventory', 'qb-core', 'es_extended' }
+
+---@return string?
+function bikewheel.inventory()
+    if config.inventory == 'none' then return end
+    if config.inventory ~= 'auto' then return config.inventory end
+
+    for i = 1, #bikewheel.inventories do
+        local name = bikewheel.inventories[i]
+
+        if GetResourceState(name) == 'started' then return name end
+    end
+
+end
+
+---@return boolean
+function bikewheel.itemsRequired()
+    return config.requireItems ~= false and bikewheel.inventory() ~= nil
+end
 
 bikewheel.wheels = {
     front = { bone = 'wheel_lf', wheelIndex = 1, tyreIndex = 0, item = config.items.frontWheel, thickSide = -1 },
