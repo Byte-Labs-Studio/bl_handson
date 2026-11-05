@@ -1,9 +1,11 @@
 # Byte Labs - Hands-On
 A hands-on, server-validated motorcycle wheel change simulator for your FiveM server.
 
+[![bl_handson preview](.github/preview.gif)](https://github.com/Byte-Labs-Studio/bl_handson/releases/latest)
+
 Website: [Byte Labs](https://byte-labs.net)
 Discord: [Byte Labs](https://discord.gg/fqsqSjZfxE)
-Preview: [watch the 1.1.0 preview](https://github.com/Byte-Labs-Studio/bl_handson/releases/latest)
+Full preview video: [Releases](https://github.com/Byte-Labs-Studio/bl_handson/releases/latest)
 
 Walk up to a parked motorcycle with a tool kit and a replacement wheel, target the front or rear wheel and do the job yourself: lift the bike on a paddock stand, crack the caliper bolts, break the axle nut loose, set the chain slack, torque it to spec and pump the brake. **22 steps for a rear wheel, 18 for the front.**
 
