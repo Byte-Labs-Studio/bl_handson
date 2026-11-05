@@ -3,6 +3,7 @@ A hands-on, server-validated motorcycle wheel change simulator for your FiveM se
 
 Website: [Byte Labs](https://byte-labs.net)
 Discord: [Byte Labs](https://discord.gg/fqsqSjZfxE)
+Preview: [watch the 1.1.0 preview](https://github.com/Byte-Labs-Studio/bl_handson/releases/latest)
 
 Walk up to a parked motorcycle with a tool kit and a replacement wheel, target the front or rear wheel and do the job yourself: lift the bike on a paddock stand, crack the caliper bolts, break the axle nut loose, set the chain slack, torque it to spec and pump the brake. **22 steps for a rear wheel, 18 for the front.**
 
@@ -25,7 +26,7 @@ Walk up to a parked motorcycle with a tool kit and a replacement wheel, target t
 - Optional target: [ox_target](https://github.com/overextended/ox_target) or [qb-target](https://github.com/qbcore-framework/qb-target)
 
 ## Installation
-1. Download
+1. Download `bl_handson-x.x.x.zip` from [Releases](https://github.com/Byte-Labs-Studio/bl_handson/releases/latest)
 2. Extract the `bl_handson` folder to your resources directory
 3. Add the items from [`install/`](install) to your inventory (see [Items](#items)), or skip this for [Standalone](#standalone)
 4. Add `ensure bl_handson` to your server.cfg after ox_lib, your inventory and your target
@@ -140,7 +141,7 @@ local busy = exports.bl_handson:isBusy(source)
 ```
 
 ### Events (server)
-Fired after a wheel change from the built-in target option has been completed.
+Fired after a wheel change started from the built-in target option, prompt or command has been completed.
 ```lua
 AddEventHandler('bl_handson:bikewheel:completed', function(source, netId, wheel)
     -- wheel: 'front' | 'rear'
