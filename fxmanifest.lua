@@ -12,6 +12,8 @@ shared_scripts {
     '@ox_lib/init.lua',
 }
 
+ox_lib 'math'
+
 client_scripts {
     'client/main.lua',
 }

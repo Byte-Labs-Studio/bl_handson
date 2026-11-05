@@ -83,6 +83,7 @@ local function runSteps(id, ctx)
 
     for index = 1, #steps do
         local step = steps[index]
+        local since = GetGameTimer()
 
         while true do
             hud.step(index, #steps, step.label, step.hint)
@@ -90,6 +91,12 @@ local function runSteps(id, ctx)
             local data = ctx.run(step)
 
             if data == nil then return 'cancelled' end
+
+            local readyAt = since + step.minMs
+
+            input.wait(ctx.opts, function()
+                if GetGameTimer() >= readyAt then return true end
+            end)
 
             local reply
 
@@ -109,6 +116,8 @@ local function runSteps(id, ctx)
             end
 
             if reply.failed then return 'failed', reply.reason end
+
+            since = GetGameTimer()
 
             if reply.strike then
                 input.sound('ERROR')
@@ -148,6 +157,7 @@ RegisterNetEvent('bl_handson:client:start', function(id, gameName, params, spec)
         props.clear()
         camera.stop(true)
         ClearPedTasks(cache.ped)
+        game.recover(params.netId)
 
         ctx, reason = nil, 'failed'
     end
@@ -168,7 +178,13 @@ RegisterNetEvent('bl_handson:client:start', function(id, gameName, params, spec)
     hud.show(true, game.title)
     DoScreenFadeIn(FADE_MS)
 
-    local outcome = runSteps(id, ctx)
+    local ran, outcome = pcall(runSteps, id, ctx)
+
+    if not ran then
+        lib.print.error(outcome)
+
+        outcome = 'failed'
+    end
 
     hud.show(false)
     fadeOut()
@@ -213,6 +229,16 @@ RegisterNetEvent('bl_handson:client:fixTyre', function(netId, wheelIndex, tyreIn
     SetVehicleWheelHealth(vehicle, wheelIndex, 1000.0)
 end)
 
+RegisterNetEvent('bl_handson:client:recover', function(gameName, netId)
+    if GetInvokingResource() then return end
+    if type(netId) ~= 'number' then return end
+
+    local game = games[gameName]
+    if not game then return end
+
+    game.recover(netId)
+end)
+
 ---@param entity integer
 ---@return boolean
 local function serviceable(entity)
@@ -246,12 +272,13 @@ local function option(wheelKey)
         items = shared.itemsRequired and { config.items.toolkit, wheel.item } or nil,
         canInteract = function(entity) return serviceable(entity) end,
         onSelect = function(data)
-            local entity = type(data) == 'table' and data.entity or data
+            local entity = data.entity
 
             if not entity or entity == 0 or not NetworkGetEntityIsNetworked(entity) then return end
 
             TriggerServerEvent('bl_handson:server:bikewheel', NetworkGetNetworkIdFromEntity(entity), wheelKey, 'target')
         end,
+
     }
 end
 
@@ -370,6 +397,7 @@ AddEventHandler('onResourceStart', function(resource)
 
         registerOptions()
     end)
+
 end)
 
 AddEventHandler('onResourceStop', function(resource)

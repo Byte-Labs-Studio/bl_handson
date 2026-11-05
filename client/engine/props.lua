@@ -83,6 +83,7 @@ function props.fadeIn(entity, ms)
         end
 
     end)
+
 end
 
 ---@param entity integer?

@@ -92,40 +92,4 @@ function bridge.remove(source, item)
     return false
 end
 
----@param source integer
----@param item string
-function bridge.refund(source, item)
-    local backend = inventory()
-
-    if backend == 'ox_inventory' then
-        if exports.ox_inventory:AddItem(source, item, 1) then return end
-
-        exports.ox_inventory:CustomDrop('Workshop', { { item, 1 } }, GetEntityCoords(GetPlayerPed(source)))
-
-        return
-    end
-
-    if backend == 'qs-inventory' then
-        exports['qs-inventory']:AddItem(source, item, 1)
-
-        return
-    end
-
-    if backend == 'qb-core' then
-        local player = qbPlayer(source)
-
-        if player then player.Functions.AddItem(item, 1) end
-
-        return
-    end
-
-    if backend == 'es_extended' then
-        local player = esxPlayer(source)
-
-        if player then player.addInventoryItem(item, 1) end
-
-    end
-
-end
-
 return bridge

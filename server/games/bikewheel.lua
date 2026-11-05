@@ -1,10 +1,14 @@
 local shared = require 'shared.bikewheel'
+local bridge = require 'server.bridge'
 
 local MAX_DISTANCE = 4.0
 local MAX_ADJUST_TURNS = 12.0
 local MAX_TORQUE = 400.0
+local CONTROL_WINDOW_MS = 8000
+local RECOVER_TRIES = 30
+local RECOVER_RETRY_MS = 1000
 
----@type table<integer, boolean>
+---@type table<integer, integer>
 local locked = {}
 
 ---@param value any
@@ -35,7 +39,7 @@ end
 local game = {}
 
 ---@param source integer
----@param params { netId: integer, wheel: string }
+---@param params { netId: integer, wheel: string, charge?: boolean }
 ---@return boolean ok
 ---@return string? reason
 ---@return table? state
@@ -90,10 +94,19 @@ end
 ---@param session HandsonSession
 function game.begin(session)
     local entity = session.state.entity
+    local id = session.id
 
-    locked[entity] = true
+    locked[entity] = id
 
     SetEntityIgnoreRequestControlFilter(entity, true)
+
+    SetTimeout(CONTROL_WINDOW_MS, function()
+        if locked[entity] and locked[entity] ~= id then return end
+        if not DoesEntityExist(entity) then return end
+
+        SetEntityIgnoreRequestControlFilter(entity, false)
+    end)
+
 end
 
 ---@param session HandsonSession
@@ -151,8 +164,45 @@ function game.validate(session, step, data)
 end
 
 ---@param session HandsonSession
+---@return boolean paid
+---@return string? reason
+function game.complete(session)
+    if not session.params.charge then return true end
+    if not bridge.remove(session.source, session.state.wheel.item) then return false, 'no_wheel' end
+
+    return true
+end
+
+---@param session HandsonSession
+---@param netId integer
+---@param gone? integer
+local function recover(session, netId, gone)
+    local entity = session.state.entity
+
+    CreateThread(function()
+        for _ = 1, RECOVER_TRIES do
+            if not DoesEntityExist(entity) or locked[entity] then return end
+
+            local owner = NetworkGetEntityOwner(entity)
+
+            if owner > 0 and owner ~= gone then
+                TriggerClientEvent('bl_handson:client:recover', owner, session.game, netId)
+
+                return
+            end
+
+            Wait(RECOVER_RETRY_MS)
+        end
+
+        lib.print.warn(('bike %s had no owner to put its wheel back'):format(netId))
+    end)
+
+end
+
+---@param session HandsonSession
 ---@param ok boolean
-function game.finish(session, ok)
+---@param reason? string
+function game.finish(session, ok, reason)
     local entity = session.state.entity
 
     locked[entity] = nil
@@ -161,15 +211,20 @@ function game.finish(session, ok)
 
     SetEntityIgnoreRequestControlFilter(entity, false)
 
-    if not ok then return end
-
-    local wheel = session.state.wheel
+    local netId = session.state.netId
     local owner = NetworkGetEntityOwner(entity)
 
-    if owner > 0 then
-        TriggerClientEvent('bl_handson:client:fixTyre', owner, session.state.netId, wheel.wheelIndex, wheel.tyreIndex)
+    if reason == 'dropped' then
+        recover(session, netId, session.source)
+    elseif owner ~= session.source then
+        recover(session, netId)
     end
 
+    if not ok or owner <= 0 then return end
+
+    local wheel = session.state.wheel
+
+    TriggerClientEvent('bl_handson:client:fixTyre', owner, netId, wheel.wheelIndex, wheel.tyreIndex)
 end
 
 return game

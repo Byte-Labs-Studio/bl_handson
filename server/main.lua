@@ -7,7 +7,8 @@ local config = require 'config'
 ---@field begin fun(session: HandsonSession)
 ---@field check fun(session: HandsonSession): boolean, string?
 ---@field validate fun(session: HandsonSession, step: HandsonStep, data: any): boolean, string?
----@field finish fun(session: HandsonSession, ok: boolean)
+---@field complete fun(session: HandsonSession): boolean, string?
+---@field finish fun(session: HandsonSession, ok: boolean, reason?: string)
 
 ---@type table<string, HandsonGame>
 local games = {
@@ -39,6 +40,9 @@ local bySource = {}
 
 local nextId = 0
 
+---@type integer?
+local watchdog
+
 ---@param session HandsonSession
 ---@param ok boolean
 ---@param reason? string
@@ -48,7 +52,13 @@ local function finish(session, ok, reason, notifyClient)
 
     bySource[session.source] = nil
 
-    games[session.game].finish(session, ok)
+    if watchdog and not next(bySource) then
+        ClearInterval(watchdog)
+
+        watchdog = nil
+    end
+
+    games[session.game].finish(session, ok, reason)
 
     if notifyClient then
         TriggerClientEvent('bl_handson:client:stop', session.source, session.id, reason)
@@ -71,6 +81,25 @@ local function strike(session, reason)
     end
 
     return { ok = false, strike = true, reason = reason, strikes = session.strikes }
+end
+
+local function patrol()
+    local now = GetGameTimer()
+
+    for _, session in pairs(bySource) do
+        if now - session.stepAt > STEP_IDLE_MS or now - session.startedAt > SESSION_MAX_MS then
+            finish(session, false, 'timeout', true)
+        else
+            local alive, why = games[session.game].check(session)
+
+            if not alive then
+                finish(session, false, why, true)
+            end
+
+        end
+
+    end
+
 end
 
 ---@param source integer
@@ -112,6 +141,10 @@ local function start(source, gameName, params)
 
     session.spec = game.spec(params, session.state)
     bySource[source] = session
+
+    if not watchdog then
+        watchdog = SetInterval(patrol, WATCHDOG_MS)
+    end
 
     game.begin(session)
 
@@ -170,6 +203,14 @@ lib.callback.register('bl_handson:server:step', function(source, id, name, data)
     session.stepAt = now
 
     if session.index > #session.steps then
+        local paid, unpaid = game.complete(session)
+
+        if not paid then
+            finish(session, false, unpaid)
+
+            return { ok = false, failed = true, reason = unpaid }
+        end
+
         finish(session, true)
 
         return { ok = true, done = true }
@@ -187,25 +228,6 @@ RegisterNetEvent('bl_handson:server:cancel', function(id)
     finish(session, false, 'cancelled')
 end)
 
-SetInterval(function()
-    local now = GetGameTimer()
-
-    for _, session in pairs(bySource) do
-        if now - session.stepAt > STEP_IDLE_MS or now - session.startedAt > SESSION_MAX_MS then
-            finish(session, false, 'timeout', true)
-        else
-            local alive, why = games[session.game].check(session)
-
-            if not alive then
-                finish(session, false, why, true)
-            end
-
-        end
-
-    end
-
-end, WATCHDOG_MS)
-
 AddEventHandler('playerDropped', function()
     local session = bySource[source]
 
@@ -214,6 +236,21 @@ AddEventHandler('playerDropped', function()
     end
 
 end)
+
+---@param src any
+local function logout(src)
+    if not GetInvokingResource() or type(src) ~= 'number' then return end
+
+    local session = bySource[src]
+
+    if session then
+        finish(session, false, 'logout', true)
+    end
+
+end
+
+AddEventHandler('QBCore:Server:OnPlayerUnload', logout)
+AddEventHandler('esx:playerLogout', logout)
 
 AddEventHandler('onResourceStop', function(resource)
     if resource ~= cache.resource then return end

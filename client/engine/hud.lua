@@ -33,7 +33,7 @@ function hud.gauge(data)
     SendNUIMessage({ action = 'gauge', gauge = data })
 end
 
----@param kind 'strike' | 'good' | 'info'
+---@param kind 'strike' | 'good'
 ---@param text string
 ---@param strikes? integer
 ---@param maxStrikes? integer
