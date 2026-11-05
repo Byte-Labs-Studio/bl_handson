@@ -9,10 +9,11 @@ Walk up to a parked motorcycle with a tool kit and a replacement wheel, target t
 ## Features
 - Fully hands-on: every step is done with the mouse (drag, turn, adjust, pick, pump), no progress bars
 - Server-validated: every step is checked in order, with minimum step times, and rushing or doing it wrong costs a strike
-- Real tools and parts: paddock stands, ratchet, breaker bar, torque wrench, axle, spacers, chain adjusters and caliper (15 original streamed props)
+- Real tools and parts: paddock stands, ratchet, breaker bar, torque wrench, axle, spacers, chain adjusters and caliper (15 original streamed props with PBR textures in one shared texture dictionary)
 - Real mechanics: breaker-bar breakaway, chain slack and adjuster alignment, torque spec with over/under torque, wrong-spacer checks
 - The old wheel actually comes off the bike and the new one goes back on
-- Items are only taken on start and refunded (or dropped) if the job fails
+- The wheel item is only taken when the last step is accepted, so a failed, cancelled or interrupted job costs nothing
+- Jobs end cleanly on disconnect, character logout (qb-core, Qbox, ESX) and resource restart, and the bike gets its wheel back
 - Camera views per step and a clean NUI overlay with step progress and strike counter
 - Auto-detects inventory and target resources, or runs fully standalone with an ox_lib prompt
 - Developer exports and a completion event to hook in tyre condition, XP, payouts and more
@@ -20,7 +21,7 @@ Walk up to a parked motorcycle with a tool kit and a replacement wheel, target t
 ## Dependencies
 - [ox_lib](https://github.com/overextended/ox_lib)
 - OneSync
-- Optional inventory: [ox_inventory](https://github.com/overextended/ox_inventory), qb-core (qb / ps / lj inventory), qs-inventory or es_extended
+- Optional inventory: [ox_inventory](https://github.com/overextended/ox_inventory) (Qbox, ox_core and others), qb-core (qb / ps / lj inventory), qs-inventory or es_extended
 - Optional target: [ox_target](https://github.com/overextended/ox_target) or [qb-target](https://github.com/qbcore-framework/qb-target)
 
 ## Installation
@@ -106,7 +107,7 @@ add_principal identifier.license:xxxxxxxx group.mechanic
 ```
 
 ## Items
-The tool kit is kept, the replacement wheel is used up when the job is done.
+The tool kit is kept. The replacement wheel is checked when the job starts and used up when the last step is done.
 
 | Item | Default name |
 | --- | --- |
@@ -131,7 +132,7 @@ Item images are not included, see [`install/images`](install/images/README.md).
 ### Exports (server)
 ```lua
 -- Starts a game for a player and yields until it ends.
--- Items are not checked or taken here, do that yourself.
+-- Items are not checked or taken here unless you pass charge = true, do that yourself.
 local ok, reason = exports.bl_handson:start(source, 'bikewheel', { netId = netId, wheel = 'rear' })
 
 -- true while the player is in a game
@@ -153,7 +154,6 @@ Use `AddEventHandler`, not `RegisterNetEvent`, so clients cannot fake it.
 - On bikes the CFX wheel array is front = `1`, rear = `0` (tyre indexes front = `0`, rear = `4`).
 - The real wheel is removed with `BreakOffVehicleWheel(vehicle, index, false, true, true, false)` (`deleteWheel = true`) and restored when the job ends.
 - qb-target only checks for the tool kit before showing the option; the wheel item is still checked by the server.
-- The `ecrp_hs_*` model names are baked into the streamed assets and stay as they are.
 
 ## License
 [GPL-3.0](LICENSE)

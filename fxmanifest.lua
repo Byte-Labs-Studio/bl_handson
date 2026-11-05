@@ -4,7 +4,7 @@ use_experimental_fxv2_oal 'yes'
 lua54 'yes'
 
 author 'Byte Labs'
-version '1.0.0'
+version '1.1.0'
 description 'Byte Labs Hands-On: server-validated motorcycle wheel change simulator'
 repository 'https://github.com/Byte-Labs-Studio/bl_handson'
 
