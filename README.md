@@ -4,7 +4,7 @@ A hands-on, server-validated motorcycle wheel change simulator for your FiveM se
 Website: [Byte Labs](https://byte-labs.net)
 Discord: [Byte Labs](https://discord.gg/fqsqSjZfxE)
 
-Walk up to a parked motorcycle with a tool kit and a replacement wheel, target the front or rear wheel and do the job yourself: lift the bike on a paddock stand, crack the caliper bolts, break the axle nut loose, set the chain slack, torque it to spec and pump the brake. **22 steps for a rear wheel, 17 for the front.**
+Walk up to a parked motorcycle with a tool kit and a replacement wheel, target the front or rear wheel and do the job yourself: lift the bike on a paddock stand, crack the caliper bolts, break the axle nut loose, set the chain slack, torque it to spec and pump the brake. **22 steps for a rear wheel, 18 for the front.**
 
 ## Features
 - Fully hands-on: every step is done with the mouse (drag, turn, adjust, pick, pump), no progress bars
@@ -14,7 +14,7 @@ Walk up to a parked motorcycle with a tool kit and a replacement wheel, target t
 - The old wheel actually comes off the bike and the new one goes back on
 - The wheel item is only taken when the last step is accepted, so a failed, cancelled or interrupted job costs nothing
 - Jobs end cleanly on disconnect, character logout (qb-core, Qbox, ESX) and resource restart, and the bike gets its wheel back
-- Camera views per step and a clean NUI overlay with step progress and strike counter
+- Camera views per step and a Byte Labs styled overlay with step progress, live gauges and strike counter
 - Auto-detects inventory and target resources, or runs fully standalone with an ox_lib prompt
 - Developer exports and a completion event to hook in tyre condition, XP, payouts and more
 

@@ -8,16 +8,22 @@
 <body>
     <section id="panel" class="panel hidden">
         <header>
-            <span id="title" class="title"></span>
-            <span id="count" class="count"></span>
+            <h2 id="title" class="title"></h2>
+            <div class="badge">
+                <svg viewBox="0 0 184.751 184.751"><path d="M0,92.375l46.188-80h92.378l46.185,80l-46.185,80H46.188L0,92.375z"/></svg>
+                <span id="index"></span>
+            </div>
         </header>
-        <div id="bar" class="steps"><div id="barFill"></div></div>
-        <h1 id="label"></h1>
-        <p id="hint"></p>
-        <div id="gauge" class="gauge"></div>
+        <div class="body">
+            <div class="meta"><span>Step</span><b id="count"></b></div>
+            <h1 id="label"></h1>
+            <p id="hint"></p>
+            <div id="gauge" class="gauge"></div>
+        </div>
+        <div id="steps" class="steps"></div>
         <footer>
             <div id="strikes" class="strikes"></div>
-            <div class="keys"><kbd>LMB</kbd> grab &nbsp; <kbd>E</kbd> confirm &nbsp; <kbd>X</kbd> stop</div>
+            <div class="keys"><kbd>LMB</kbd><span>grab</span><kbd>E</kbd><span>confirm</span><kbd>X</kbd><span>stop</span></div>
         </footer>
     </section>
     <div id="toast" class="toast"></div>

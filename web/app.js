@@ -13,6 +13,33 @@ function meter(value, className = '') {
     return `<div class="meter ${className}"><div class="fill" style="width:${percent(value)}"></div></div>`;
 }
 
+function renderTitle(text) {
+    const words = text.trim().split(/\s+/);
+    const last = words.pop() || '';
+    const title = $('title');
+
+    title.textContent = words.length ? `${words.join(' ')} ` : '';
+
+    const accent = document.createElement('em');
+
+    accent.textContent = last;
+    title.appendChild(accent);
+}
+
+function renderSteps(index, total) {
+    const steps = $('steps');
+
+    if (steps.childElementCount !== total) {
+        steps.innerHTML = '';
+
+        for (let i = 0; i < total; i++) steps.appendChild(document.createElement('span'));
+    }
+
+    for (let i = 0; i < total; i++) {
+        steps.children[i].className = i < index - 1 ? 'done' : i === index - 1 ? 'now' : '';
+    }
+}
+
 function renderStrikes(count) {
     const strikes = $('strikes');
 
@@ -101,7 +128,7 @@ const actions = {
     visible: (data) => {
         panel.classList.toggle('hidden', !data.visible);
 
-        if (data.title) $('title').textContent = data.title;
+        if (data.title) renderTitle(data.title);
 
         if (!data.visible) {
             gauge.innerHTML = '';
@@ -114,7 +141,8 @@ const actions = {
 
     step: (data) => {
         $('count').textContent = `${data.index} / ${data.total}`;
-        $('barFill').style.width = percent((data.index - 1) / data.total);
+        $('index').textContent = data.index;
+        renderSteps(data.index, data.total);
         $('label').textContent = data.label;
         $('hint').textContent = data.hint;
         gauge.innerHTML = '';

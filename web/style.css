@@ -1,11 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
+
 :root {
-    --bg: rgba(14, 17, 22, 0.86);
-    --line: rgba(255, 255, 255, 0.08);
-    --text: #e9edf2;
-    --muted: #8d97a5;
-    --accent: #f2b33d;
-    --good: #57d68d;
-    --bad: #ff5d5d;
+    --panel: #252525;
+    --panel-deep: #141414;
+    --tile: #1b1b1b;
+    --line: #3c3c3c;
+    --text: #faf7ff;
+    --muted: #a19fb3;
+    --accent: #8685ef;
+    --accent-soft: rgba(134, 133, 239, 0.25);
+    --success: #66e78a;
+    --error: #e5283e;
+    --warning: #ffde70;
 }
 
 * {
@@ -20,7 +26,7 @@ body {
     height: 100%;
     overflow: hidden;
     background: transparent;
-    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    font-family: 'Roboto', 'Segoe UI', Arial, sans-serif;
     color: var(--text);
     user-select: none;
 }
@@ -33,177 +39,274 @@ body {
     position: absolute;
     top: 6vh;
     left: 2.2vw;
-    width: 340px;
-    padding: 16px 18px 14px;
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-left: 3px solid var(--accent);
-    border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    width: 40vh;
+    background: linear-gradient(180deg, var(--panel) 0%, var(--panel-deep) 100%);
+    box-shadow: 0 0 0.15vh rgba(134, 133, 239, 0.35), 0 1.5vh 4vh rgba(0, 0, 0, 0.55);
+    animation: enter 0.25s ease-out;
 }
 
 header {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    font-size: 11px;
-    letter-spacing: 0.12em;
+    height: 5.4vh;
+    padding: 0 1.2vh 0 1.6vh;
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.title {
+    font-size: 2vh;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.title em {
+    font-style: normal;
+    color: var(--accent);
+    text-shadow: 0 0 1.2vh rgba(134, 133, 239, 0.45);
+}
+
+.badge {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 3.8vh;
+    height: 3.8vh;
+}
+
+.badge svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    fill: var(--accent);
+    filter: drop-shadow(0 0 0.5vh var(--accent));
+}
+
+.badge span {
+    position: relative;
+    font-size: 1.45vh;
+    font-weight: 900;
+    color: var(--panel-deep);
+}
+
+.body {
+    padding: 1.6vh 1.6vh 0;
+}
+
+.meta {
+    display: flex;
+    gap: 0.6vh;
+    font-size: 1.1vh;
+    font-weight: 500;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--muted);
 }
 
-.steps {
-    height: 3px;
-    margin: 10px 0 12px;
-    background: var(--line);
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-#barFill {
-    height: 100%;
-    width: 0;
-    background: var(--accent);
-    transition: width 0.3s ease;
+.meta b {
+    color: var(--accent);
+    font-weight: 700;
 }
 
 h1 {
-    font-size: 19px;
-    font-weight: 600;
-    line-height: 1.25;
+    margin-top: 0.6vh;
+    font-size: 2.3vh;
+    font-weight: 700;
+    line-height: 1.2;
 }
 
 #hint {
-    margin-top: 6px;
-    font-size: 13px;
-    line-height: 1.45;
+    margin-top: 0.7vh;
+    font-size: 1.4vh;
+    line-height: 1.5;
     color: var(--muted);
 }
 
 .gauge {
-    margin-top: 14px;
-    min-height: 8px;
+    margin-top: 1.6vh;
+    min-height: 0.8vh;
 }
 
 .meter {
     position: relative;
-    height: 10px;
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: 5px;
+    height: 1.1vh;
+    background: var(--tile);
+    box-shadow: inset 0 0 0 0.1vh var(--line);
     overflow: hidden;
 }
 
 .meter .fill {
     height: 100%;
     background: var(--accent);
-    border-radius: 5px;
+    box-shadow: 0 0 1vh var(--accent);
+    transition: width 0.08s linear;
 }
 
 .meter .zone {
     position: absolute;
     top: 0;
     bottom: 0;
-    background: rgba(87, 214, 141, 0.35);
+    background: rgba(102, 231, 138, 0.28);
+    box-shadow: inset 0 0 0 0.1vh rgba(102, 231, 138, 0.6);
 }
 
 .meter .pin {
     position: absolute;
-    top: -3px;
-    width: 3px;
-    height: 16px;
-    margin-left: -1px;
+    top: 0;
+    width: 0.4vh;
+    height: 100%;
+    margin-left: -0.2vh;
     background: var(--text);
-    border-radius: 2px;
+    box-shadow: 0 0 0.8vh var(--text);
 }
 
 .readout {
     display: flex;
     justify-content: space-between;
-    margin-top: 6px;
-    font-size: 12px;
+    align-items: baseline;
+    margin: 1vh 0 0.6vh;
+    font-size: 1.25vh;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: var(--muted);
 }
 
+.readout:first-child {
+    margin-top: 0;
+}
+
 .readout b {
+    font-size: 1.6vh;
+    letter-spacing: 0;
+    text-transform: none;
     color: var(--text);
-    font-size: 14px;
 }
 
 .readout b.ok {
-    color: var(--good);
+    color: var(--success);
 }
 
 .readout b.warn {
-    color: var(--bad);
+    color: var(--error);
 }
 
 .strain .fill {
-    background: var(--bad);
+    background: var(--warning);
+    box-shadow: 0 0 1vh var(--warning);
 }
 
 .dots {
     display: flex;
-    gap: 6px;
+    gap: 0.8vh;
 }
 
 .dots span {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.08);
+    width: 3.2vh;
+    height: 3.2vh;
+    background: var(--tile);
+    box-shadow: inset 0 0 0 0.1vh var(--line);
 }
 
 .dots span.on {
     background: var(--accent);
+    box-shadow: 0 0 1vh var(--accent);
+}
+
+.steps {
+    display: flex;
+    gap: 0.25vh;
+    height: 0.6vh;
+    margin: 1.8vh 1.6vh 0;
+}
+
+.steps span {
+    flex: 1;
+    background: var(--tile);
+}
+
+.steps span.done {
+    background: var(--accent);
+}
+
+.steps span.now {
+    background: var(--text);
+    box-shadow: 0 0 0.8vh var(--accent);
+    animation: pulse 1.2s ease-in-out infinite;
 }
 
 footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 14px;
-    padding-top: 10px;
-    border-top: 1px solid var(--line);
-    font-size: 11px;
+    padding: 1.3vh 1.6vh 1.4vh;
+}
+
+.keys {
+    display: flex;
+    align-items: center;
+    gap: 0.5vh;
+    font-size: 1.15vh;
     color: var(--muted);
 }
 
+.keys span {
+    margin-right: 0.7vh;
+}
+
 kbd {
-    padding: 1px 5px;
-    border: 1px solid var(--line);
-    border-radius: 3px;
+    display: grid;
+    place-items: center;
+    min-width: 2.2vh;
+    height: 2.2vh;
+    padding: 0 0.5vh;
+    background: var(--line);
     font-family: inherit;
-    font-size: 10px;
+    font-size: 1.05vh;
+    font-weight: 700;
     color: var(--text);
 }
 
 .strikes {
     display: flex;
-    gap: 4px;
+    gap: 0.5vh;
 }
 
 .strikes span {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.12);
+    width: 1.7vh;
+    height: 1.5vh;
+    clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+    background: var(--line);
 }
 
 .strikes span.hit {
-    background: var(--bad);
+    background: var(--error);
 }
 
 .toast {
     position: absolute;
     left: 50%;
-    bottom: 14vh;
-    padding: 9px 16px;
-    transform: translate(-50%, 10px);
-    background: var(--bg);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    font-size: 14px;
+    bottom: 13vh;
+    display: flex;
+    align-items: center;
+    gap: 1.2vh;
+    padding: 1.2vh 2vh 1.2vh 1.4vh;
+    transform: translate(-50%, 1vh);
+    background: linear-gradient(180deg, var(--panel) 0%, var(--panel-deep) 100%);
+    box-shadow: 0 1vh 3vh rgba(0, 0, 0, 0.5);
+    font-size: 1.6vh;
+    font-weight: 500;
     opacity: 0;
     transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast::before {
+    content: '';
+    width: 1.8vh;
+    height: 1.6vh;
+    clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+    background: var(--accent);
 }
 
 .toast.show {
@@ -211,11 +314,27 @@ kbd {
     transform: translate(-50%, 0);
 }
 
-.toast.good {
-    border-color: rgba(87, 214, 141, 0.5);
+.toast.good::before {
+    background: var(--success);
 }
 
 .toast.strike {
-    border-color: rgba(255, 93, 93, 0.6);
-    color: #ffd2d2;
+    color: #ffd6db;
+}
+
+.toast.strike::before {
+    background: var(--error);
+}
+
+@keyframes pulse {
+    50% {
+        opacity: 0.45;
+    }
+}
+
+@keyframes enter {
+    from {
+        opacity: 0;
+        transform: translateX(-1.5vh);
+    }
 }
