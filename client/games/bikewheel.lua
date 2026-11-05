@@ -22,7 +22,7 @@ local WHEEL_PER_TURN = 0.008
 local MAX_BONE_REACH = 3.0
 local TYRE_INDICES = { 0, 1, 4, 5 }
 local PART_FADE_MS = 300
-local ADJUSTER_MODELS = { 'ecrp_hs_adjuster_plate', 'ecrp_hs_adjuster_bolt' }
+local ADJUSTER_MODELS = { 'bl_hs_adjuster_plate', 'bl_hs_adjuster_bolt' }
 local ADJUSTER_BOLT_Y = -0.110
 local ADJUSTER_HEAD_DEPTH = 0.003
 local BOLT_REST = 0.0105
@@ -31,16 +31,16 @@ local AXLE_REST = 0.0127
 local MAX_KNEEL_REACH = 2.5
 
 local TOOL_MODELS = {
-    ratchet = 'ecrp_hs_ratchet',
-    breaker = 'ecrp_hs_breaker_bar',
-    torque = 'ecrp_hs_torque_wrench',
+    ratchet = 'bl_hs_ratchet',
+    breaker = 'bl_hs_breaker_bar',
+    torque = 'bl_hs_torque_wrench',
 }
 
 local LAYOUT = {
     rear = {
-        wheel = 'ecrp_hs_mc_wheel_r',
+        wheel = 'bl_hs_mc_wheel_r',
         halfWidth = 0.092,
-        stand = 'ecrp_hs_paddock_r',
+        stand = 'bl_hs_paddock_r',
         nutX = -0.133,
         axleOut = 0.45,
         discX = 0.0745,
@@ -59,9 +59,9 @@ local LAYOUT = {
         liftSign = -1.0,
     },
     front = {
-        wheel = 'ecrp_hs_mc_wheel_f',
+        wheel = 'bl_hs_mc_wheel_f',
         halfWidth = 0.067,
-        stand = 'ecrp_hs_paddock_f',
+        stand = 'bl_hs_paddock_f',
         nutX = -0.133,
         axleOut = 0.42,
         discX = 0.0605,
@@ -79,8 +79,8 @@ local LAYOUT = {
 }
 
 local STATIC_MODELS = {
-    'ecrp_hs_axle', 'ecrp_hs_axle_nut', 'ecrp_hs_caliper', 'ecrp_hs_caliper_bolt',
-    'ecrp_hs_spacer_thick', 'ecrp_hs_spacer_thin', 'ecrp_hs_ratchet', 'ecrp_hs_breaker_bar', 'ecrp_hs_torque_wrench',
+    'bl_hs_axle', 'bl_hs_axle_nut', 'bl_hs_caliper', 'bl_hs_caliper_bolt',
+    'bl_hs_spacer_thick', 'bl_hs_spacer_thin', 'bl_hs_ratchet', 'bl_hs_breaker_bar', 'bl_hs_torque_wrench',
 }
 
 local ZERO = vec3(0.0, 0.0, 0.0)
@@ -142,7 +142,71 @@ local function takeControl(vehicle)
     return true
 end
 
+---@class BikeCondition
+---@field engine number
+---@field body number
+---@field tank number
+---@field dirt number
+---@field burst table<integer, boolean>
+
+---@param vehicle integer
+---@return BikeCondition
+local function readCondition(vehicle)
+    local condition = {
+        engine = GetVehicleEngineHealth(vehicle),
+        body = GetVehicleBodyHealth(vehicle),
+        tank = GetVehiclePetrolTankHealth(vehicle),
+        dirt = GetVehicleDirtLevel(vehicle),
+        burst = {},
+    }
+
+    for i = 1, #TYRE_INDICES do
+        local tyre = TYRE_INDICES[i]
+
+        if IsVehicleTyreBurst(vehicle, tyre, false) then
+            condition.burst[tyre] = IsVehicleTyreBurst(vehicle, tyre, true)
+        end
+
+    end
+
+    return condition
+end
+
+---@param vehicle integer
+---@param condition BikeCondition
+---@param fittedTyre? integer
+local function applyCondition(vehicle, condition, fittedTyre)
+    SetVehicleFixed(vehicle)
+    SetVehicleEngineHealth(vehicle, condition.engine)
+    SetVehicleBodyHealth(vehicle, condition.body)
+    SetVehiclePetrolTankHealth(vehicle, condition.tank)
+    SetVehicleDirtLevel(vehicle, condition.dirt)
+
+    for tyre, completely in pairs(condition.burst) do
+        if tyre ~= fittedTyre then
+            SetVehicleTyreBurst(vehicle, tyre, completely, 1000.0)
+        end
+
+    end
+
+end
+
 local game = { title = 'Motorcycle wheel change' }
+
+---@param netId integer
+function game.recover(netId)
+    local vehicle = NetworkGetEntityFromNetworkId(netId)
+
+    if vehicle == 0 or not DoesEntityExist(vehicle) or not NetworkHasControlOfEntity(vehicle) then return end
+
+    if IsVehicleWheelBrokenOff(vehicle, 0) or IsVehicleWheelBrokenOff(vehicle, 1) then
+        applyCondition(vehicle, readCondition(vehicle))
+    end
+
+    FreezeEntityPosition(vehicle, false)
+    SetEntityRotation(vehicle, 0.0, 0.0, GetEntityHeading(vehicle), 2, false)
+    SetVehicleOnGroundProperly(vehicle)
+end
 
 ---@param params { netId: integer, wheel: 'front' | 'rear' }
 ---@param spec BikeWheelSpec
@@ -195,22 +259,7 @@ function game.prepare(params, spec)
     local baseCoords = GetEntityCoords(vehicle)
     local basePitch = GetEntityRotation(vehicle, 2).x
 
-    local condition = {
-        engine = GetVehicleEngineHealth(vehicle),
-        body = GetVehicleBodyHealth(vehicle),
-        tank = GetVehiclePetrolTankHealth(vehicle),
-        dirt = GetVehicleDirtLevel(vehicle),
-        burst = {},
-    }
-
-    for i = 1, #TYRE_INDICES do
-        local tyre = TYRE_INDICES[i]
-
-        if IsVehicleTyreBurst(vehicle, tyre, false) then
-            condition.burst[tyre] = IsVehicleTyreBurst(vehicle, tyre, true)
-        end
-
-    end
+    local condition = readCondition(vehicle)
 
     local brake = layout.brake and hub + layout.brake
 
@@ -243,13 +292,13 @@ function game.prepare(params, spec)
 
     local parts = {
         wheel = { entity = props.spawn(layout.wheel, standPivot), offset = hub, rotation = ZERO },
-        axle = { entity = props.spawn('ecrp_hs_axle', standPivot), offset = hub, rotation = ZERO },
-        nut = { entity = props.spawn('ecrp_hs_axle_nut', standPivot), offset = hub + vec3(layout.nutX, 0.0, 0.0), rotation = ZERO },
-        caliper = { entity = props.spawn('ecrp_hs_caliper', standPivot), offset = caliperCenter, rotation = vec3(caliperRoll, 0.0, 0.0) },
-        caliper_bolt_1 = { entity = props.spawn('ecrp_hs_caliper_bolt', standPivot), offset = boltHead.caliper_bolt_1, rotation = ZERO },
-        caliper_bolt_2 = { entity = props.spawn('ecrp_hs_caliper_bolt', standPivot), offset = boltHead.caliper_bolt_2, rotation = ZERO },
-        spacer_thick = { entity = props.spawn('ecrp_hs_spacer_thick', standPivot), offset = hub + vec3(layout.spacerX.thick, 0.0, 0.0), rotation = ZERO },
-        spacer_thin = { entity = props.spawn('ecrp_hs_spacer_thin', standPivot), offset = hub + vec3(layout.spacerX.thin, 0.0, 0.0), rotation = ZERO },
+        axle = { entity = props.spawn('bl_hs_axle', standPivot), offset = hub, rotation = ZERO },
+        nut = { entity = props.spawn('bl_hs_axle_nut', standPivot), offset = hub + vec3(layout.nutX, 0.0, 0.0), rotation = ZERO },
+        caliper = { entity = props.spawn('bl_hs_caliper', standPivot), offset = caliperCenter, rotation = vec3(caliperRoll, 0.0, 0.0) },
+        caliper_bolt_1 = { entity = props.spawn('bl_hs_caliper_bolt', standPivot), offset = boltHead.caliper_bolt_1, rotation = ZERO },
+        caliper_bolt_2 = { entity = props.spawn('bl_hs_caliper_bolt', standPivot), offset = boltHead.caliper_bolt_2, rotation = ZERO },
+        spacer_thick = { entity = props.spawn('bl_hs_spacer_thick', standPivot), offset = hub + vec3(layout.spacerX.thick, 0.0, 0.0), rotation = ZERO },
+        spacer_thin = { entity = props.spawn('bl_hs_spacer_thin', standPivot), offset = hub + vec3(layout.spacerX.thin, 0.0, 0.0), rotation = ZERO },
     }
 
     if layout.adjusters then
@@ -395,6 +444,7 @@ function game.prepare(params, spec)
             camera.update()
             SetEntityLocallyInvisible(cache.ped)
         end,
+
     }
 
     ---@param kind 'ratchet' | 'breaker' | 'torque'
@@ -468,6 +518,7 @@ function game.prepare(params, spec)
                     placeStand(layout.standPitch * (1.0 - amount))
                     lift(amount)
                 end,
+
             })
         end
 
@@ -513,7 +564,7 @@ function game.prepare(params, spec)
         end
 
         if target == 'wheel_out' then
-            local a = parts.wheel.offset
+            local a = hub + vec3(0.0, layout.forward, 0.0)
             local b = hub + vec3(0.45, layout.dirY * 0.55, -LIFT)
 
             return input.drag({
@@ -552,7 +603,7 @@ function game.prepare(params, spec)
         local loosening = step.dir < 0
 
         if not parts[name] then
-            add(name, step.target == 'axle_nut' and 'ecrp_hs_axle_nut' or 'ecrp_hs_caliper_bolt', base)
+            add(name, step.target == 'axle_nut' and 'bl_hs_axle_nut' or 'bl_hs_caliper_bolt', base)
         end
 
         local startAt = loosening and base or base + vec3(outward * travel, 0.0, 0.0)
@@ -582,6 +633,7 @@ function game.prepare(params, spec)
                 end
 
             end,
+
         })
 
         dropTool()
@@ -604,6 +656,7 @@ function game.prepare(params, spec)
                 move('nut', base, vec3(-degrees, 0.0, 0.0))
                 spinTool(degrees)
             end,
+
         })
 
         dropTool()
@@ -673,6 +726,7 @@ function game.prepare(params, spec)
                     goal = step.goal,
                 }
             end,
+
         })
 
         dropTool()
@@ -685,8 +739,8 @@ function game.prepare(params, spec)
         local slotX = step.side == wheel.thickSide and layout.spacerX.thick or layout.spacerX.thin
         local trayX = step.side * 0.30
 
-        add('tray_thick', 'ecrp_hs_spacer_thick', hub + vec3(trayX, -0.08, -0.12))
-        add('tray_thin', 'ecrp_hs_spacer_thin', hub + vec3(trayX, 0.08, -0.12))
+        add('tray_thick', 'bl_hs_spacer_thick', hub + vec3(trayX, -0.08, -0.12))
+        add('tray_thin', 'bl_hs_spacer_thin', hub + vec3(trayX, 0.08, -0.12))
 
         local choice = input.pick({
             render = opts.render,
@@ -711,11 +765,9 @@ function game.prepare(params, spec)
 
     ---@param step HandsonStep
     function runners.click(step)
-        local target = layout.chain
-
         return input.click({
             render = opts.render,
-            target = function() return world(hub + target) end,
+            target = function() return world(hub + layout.chain) end,
         })
     end
 
@@ -775,10 +827,7 @@ function game.prepare(params, spec)
         local runner = runners[step.kind]
         if not runner then return end
 
-        local result = runner(step)
-        if result == nil then return end
-
-        return result
+        return runner(step)
     end
 
     ---@param step HandsonStep
@@ -797,23 +846,6 @@ function game.prepare(params, spec)
     end
 
     ---@param fitted boolean
-    local function restore(fitted)
-        SetVehicleFixed(vehicle)
-        SetVehicleEngineHealth(vehicle, condition.engine)
-        SetVehicleBodyHealth(vehicle, condition.body)
-        SetVehiclePetrolTankHealth(vehicle, condition.tank)
-        SetVehicleDirtLevel(vehicle, condition.dirt)
-
-        for tyre, completely in pairs(condition.burst) do
-            if not fitted or tyre ~= wheel.tyreIndex then
-                SetVehicleTyreBurst(vehicle, tyre, completely, 1000.0)
-            end
-
-        end
-
-    end
-
-    ---@param fitted boolean
     local function cleanup(fitted)
         dropTool()
         props.remove(stand)
@@ -825,7 +857,7 @@ function game.prepare(params, spec)
         ClearPedTasks(cache.ped)
 
         if DoesEntityExist(vehicle) then
-            restore(fitted == true)
+            applyCondition(vehicle, condition, fitted == true and wheel.tyreIndex or nil)
             SetEntityRotation(vehicle, basePitch, 0.0, heading, 2, false)
             SetEntityCoordsNoOffset(vehicle, baseCoords.x, baseCoords.y, baseCoords.z, false, false, false)
             FreezeEntityPosition(vehicle, false)
